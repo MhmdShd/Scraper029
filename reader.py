@@ -4,8 +4,8 @@ import requests
 from PyPDF2 import PdfReader
 
 keywords = 'medicine'
-File = 'elfs.txt'
-file = open(f'C:\\Users\\mhmda\\Desktop\\PrivateScraper\\Pdf list per site\\{File}')
+File = 'file name'
+file = open(f'C:\\Users\\mhmda\\Desktop\\Scraper029\\Pdf list per site\\{File}')
 PDF_links = []
 Detected_PDF_link= []
 links = file.readlines()
