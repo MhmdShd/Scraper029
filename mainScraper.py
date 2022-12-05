@@ -9,12 +9,8 @@ import datetime
 from bs4 import BeautifulSoup
 
 articles = []
-
-keywords = 'the'
-
-# article = input('Website: \n') 
-
-websites = open(f'C:\\Users\\mhmda\\Desktop\\PrivateScraper\\sitestoscan.txt')
+keywords = 'test'
+websites = open(f'C:\\Users\\mhmda\\Desktop\\Scraper029\\sitestoscan.txt')
 sites = websites.readlines()
 
 # for site in sites:
