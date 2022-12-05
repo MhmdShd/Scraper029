@@ -8,8 +8,6 @@
 # -------------------------------------
 # -------------------------------------
 
-
-
 def scrapeStructure_B2():
     getIssuesBY('title','table of contents',driver)
     driver.close()
@@ -81,8 +79,6 @@ def G_getIssues():
                 pass
         print(f'{len(Volume_links)} volumes unscanned yet.')
 
-
-
 def scrapeStructure_F2():
     F_getIssues()
     driver.close()
@@ -149,8 +145,6 @@ def C_getPDFs2(Driver):
                     PDF_links.append(PDF)
                     print(f'{len(PDF_links)} PDFs Gathered')
         
-
-
 def scrapeStructure_E2():
     E_getVolumes()
     driver.close()
@@ -162,8 +156,6 @@ def E_getVolumes2():
         link = article.replace('archives.php',str(volume.get_attribute('onclick')).split("','")[0].replace("window.open('",''))
         Issues_links.append(link)
         print(f'{len(Issues_links)} Issues gathered')
-
-
 
 def scrapeStructure_D2():
     global PDF_links
@@ -188,9 +180,6 @@ def scrapeStructure_D2():
         driver1.close()
         print(f'gathered {len(temp)} PDFs in this volume.')
     PDF_links = temp
-
-
-
 
 def scrapeStructure_I2():
     divs = driver.find_elements(By.TAG_NAME,'div')
