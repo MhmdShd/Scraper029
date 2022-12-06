@@ -4,7 +4,7 @@ import requests
 from PyPDF2 import PdfReader
 
 keywords = 'medicine'
-File = 'file name'
+File = 'www.qscience.com.txt'
 file = open(f'C:\\Users\\mhmda\\Desktop\\Scraper029\\Pdf list per site\\{File}')
 PDF_links = []
 Detected_PDF_link= []
