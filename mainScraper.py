@@ -280,7 +280,6 @@ def scrapeStructure_J(page, main):
     getVolumesByPartialText(soup,'Volume ',main)
     Issues_links = findAttrintarget(Volume_links,'a','','href','href',main)
     J_getPDFs(main)
-
 def J_getPDFs(main):
     temp_PDF_pages,temp_PDF_links,PDF_Pages = [],[],[]
     global PDF_links
@@ -310,58 +309,6 @@ def J_getPDFs(main):
             print(main + form['action'])
         except:
             pass
-    PDF_links = list(dict.fromkeys(temp_PDF_links))
-    print(f'Gathered a total of {len(PDF_links)} PDFs')
-
-def scrapeStructure_J2():
-    getVolumesByPartialText('Volume ')
-    J_getIssues()
-    J_getPDFs()
-def J_getIssues():
-    global Issues_links
-    temp_Issues_links =[]
-    while len(Volume_links)>0: 
-        volume = Volume_links.pop()
-        Vol_driver = webdriver.Chrome(options=options)
-        Vol_driver.get(volume)
-        for link in Vol_driver.find_elements(By.TAG_NAME,'a'):
-            temp_Issues_links.append(link.get_attribute('href'))
-            print(f'{len(temp_Issues_links)} Issues Gathered')  
-        print(f'{len(Volume_links)} Volumes not scanned YET')
-    Vol_driver.close()
-    Issues_links = list(dict.fromkeys(temp_Issues_links))
-    print(f'Gathered a total of {len(Issues_links)} Issues')   
-def J_getPDFs2(): #PDF_Pages
-    global PDF_links
-    PDF_pages =[]
-    temp_PDF_pages =[]
-    temp_PDF_links=[]
-    while len(Issues_links)>0:
-        volume = Issues_links.pop()
-        driver1 = webdriver.Chrome(options=options)
-        if 'Size' not in 'volume':
-            volume+='?pageSize=100&page=1'
-        driver1.get(volume)
-        Divs = driver1.find_elements(By.TAG_NAME,'div')
-        for div in Divs:
-            if div.get_attribute('class') == 'col-xs-12 col-sm-9 issue-listing':
-                Links = div.find_elements(By.TAG_NAME,'a')
-                for link in Links:
-                    if '/jemtac.' in link.get_attribute('href') and 'doi.org' not in link.get_attribute('href'):
-                        temp_PDF_pages.append(link.get_attribute('href'))
-        PDF_pages = list(dict.fromkeys(temp_PDF_pages))
-        print(f'Gathered a total of {len(PDF_pages)} PDFs pages')
-        driver1.close()
-    while len(PDF_pages)>0:
-        driver2 = webdriver.Chrome(options=options)
-        driver2.get(PDF_pages.pop())
-        forms = driver2.find_elements(By.TAG_NAME,'form')
-        for form in forms:
-            if form.get_attribute('class') == 'ft-download-content__form ft-download-content__form--pdf js-ft-download-form ':
-                url = form.get_attribute('action')
-                temp_PDF_links.append(url)
-                print(url)
-        driver2.close()
     PDF_links = list(dict.fromkeys(temp_PDF_links))
     print(f'Gathered a total of {len(PDF_links)} PDFs')
 
@@ -1065,7 +1012,7 @@ if 'mbmj.org' in article: # switched to requests
                     print(f'gathered {len(PDF_links)} PDFs')
             except:
                 pass
-if 'qscience.com' in article: # needs webdriver installed and added to path
+if 'qscience.com' in article: # switched to requests
     driver.close()
     archives_page = 'https://www.qscience.com/content/journals/jemtac/2022/4'
     file = open('www.qscience.com.txt','w')
