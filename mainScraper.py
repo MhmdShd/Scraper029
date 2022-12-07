@@ -1107,14 +1107,23 @@ if 'mejfm.com' in article: # switched to requests
     file = open('www.mejfm.com.txt','w')
     main = 'http://www.mejfm.com/'
     scrapeStructure_P(main)
-if 'journals.uokerbala.edu.iq' in article: # switched to requests /
+if 'journals.uokerbala.edu.iq' in article: # switched to requests
     archives_page = 'https://journals.uokerbala.edu.iq/index.php/kj/issue/archive'
     file = open('journals.uokerbala.edu.iq-PDFs.txt','w')
     abstract = open('journals.uokerbala.edu.iq-abstracts.txt','w')
     scrapeStructure_N(archives_page)
     for link in Abstracts_link:
         abstract.write(link+'\n')
-    abstract.close()  
+    abstract.close()
+    temp = PDF_links.copy()
+    PDF_links.clear()
+    for link in temp:
+        soup = parse(link)
+        try:
+            PDF_links.append(soup.find('a',{'class','download'})['href'])
+            print(f'gathered {len(PDF_links)} PDFs')
+        except:
+            pass 
 if 'www.iraqijms.net' in article: # switched to requests
     archives_page = 'https://www.iraqijms.net/archive.html#parentVerticalTab10'
     file = open('www.iraqijms.net.txt','w')
@@ -1129,7 +1138,16 @@ if 'iraqmedj.org' in article: # switched to requests
     scrapeStructure_N(archives_page)
     for link in Abstracts_link:
         abstract.write(link+'\n')
-    abstract.close()  
+    abstract.close()
+    temp = PDF_links.copy()
+    PDF_links.clear()
+    for link in temp:
+        soup = parse(link)
+        try:
+            PDF_links.append(soup.find('a',{'class','download'})['href'])
+            print(f'gathered {len(PDF_links)} PDFs')
+        except:
+            pass 
 if 'rmr.smr.ma/' in article: # working on switching to requests
     archives_page = 'http://rmr.smr.ma/archives'
     file = open('rmr.smr.ma.txt','w')
