@@ -242,18 +242,6 @@ def scrapeStructure_H(page,main=''): # requests
         Issues_links.append(link['href'])
         print(f'{len(Issues_links)} issues gathered')
     PDF_links = findAttrintarget(Issues_links,'a','.pdf','href','href',main)
-
-def scrapeStructure_H2():
-    Sections = driver.find_elements(By.TAG_NAME,'div')
-    for Section in Sections:
-        if Section.get_attribute('class') == 'kcite-section':
-            issues_section = Section
-    links_in_section = issues_section.find_elements(By.TAG_NAME,'a')
-    for link in links_in_section:
-        if link.get_attribute('title') == '':
-            Issues_links.append(link.get_attribute('href'))
-            print(f'{len(Issues_links)} issues gathered')
-    getPDFsInIssuesBY('href','.pdf')
     
 def scrapeStructure_I(page,main): # requests
     soup = parse(page)
@@ -274,7 +262,7 @@ def I_getPDFs(main):
     PDF_links = findAttrintarget(PDF_pages,'a','.pdf','href','href',main)
 
 
-def scrapeStructure_J(page, main):
+def scrapeStructure_J(page, main): # requests
     global Issues_links
     Issues_links = findAttrintarget(findElemintargetByPartialText([page],'a','Volume ','href',main),'a','','href','href',main)
     J_getPDFs(main)
@@ -382,7 +370,7 @@ def scrapeStructure_M():
         PDF_links.append(abstract.replace('abstract','full-text-pdf'))
         print(abstract.replace('abstract','full-text-pdf'))
 
-def scrapeStructure_N(page,main=''):
+def scrapeStructure_N(page,main=''): # requests
     global Abstracts, Abstracts_link, Issues_links
     Issues_links = findAttrintarget([page],'a','issue/view','href','href',main)
     Abstracts_link = findAttrintarget(Issues_links,'a','article-','href','href',main)
@@ -397,7 +385,7 @@ def scrapeStructure_N(page,main=''):
 
 def scrapeStructure_O():
     Issues_links_temp = []
-    getVolumesByPartialText('Volume ')
+    getVolumesByPartialText2('Volume ')
     while len(Volume_links)>0:
         driver1 = webdriver.Chrome(options=options)
         driver1.get(Volume_links.pop())
@@ -1126,17 +1114,14 @@ if 'mejfm.com' in article: # needs webdriver installed and added to path
     driver = webdriver.Chrome(options=options)
     driver.get(archives_page)
     scrapeStructure_P()
-if 'journals.uokerbala.edu.iq' in article: # needs webdriver installed and added to path
+if 'journals.uokerbala.edu.iq' in article: # switched to requests /
     archives_page = 'https://journals.uokerbala.edu.iq/index.php/kj/issue/archive'
-    file = open('journals.uokerbala.edu.iq-Abstracts.txt','w')
-    driver.close()
-    driver = webdriver.Chrome(options=options)
-    driver.get(archives_page)
-
+    file = open('journals.uokerbala.edu.iq-PDFs.txt','w')
+    abstract = open('journals.uokerbala.edu.iq-abstracts.txt','w')
     scrapeStructure_N()
     for link in Abstracts_link:
-        file.write(link+'\n')
-    file.close()    
+        abstract.write(link+'\n')
+    abstract.close()  
 if 'www.iraqijms.net' in article: # switched to requests
     archives_page = 'https://www.iraqijms.net/archive.html#parentVerticalTab10'
     file = open('www.iraqijms.net.txt','w')
@@ -1144,16 +1129,14 @@ if 'www.iraqijms.net' in article: # switched to requests
     scrapeRequests(archives_page,main,'a','issue&id=','href','href','a','.pdf','href','href')
     temp = PDF_links.copy()
     PDF_links = list(dict.fromkeys(temp))
-if 'iraqmedj.org' in article: # needs webdriver installed and added to path
+if 'iraqmedj.org' in article: # switched to requests /
     archives_page = 'https://iraqmedj.org/index.php/imj/issue/archive'
-    file = open('iraqmedj.org-abstracts.txt','w')
-    driver.close()
-    driver = webdriver.Chrome(options=options)
-    driver.get(archives_page)
+    file = open('iraqmedj.org-PDFs.txt','w')
+    abstract = open('iraqmedj.org-abstracts.txt','w')
     scrapeStructure_N()
     for link in Abstracts_link:
-        file.write(link+'\n')
-    file.close()    
+        abstract.write(link+'\n')
+    abstract.close()  
 if 'rmr.smr.ma/' in article: # working on switching to requests
     archives_page = 'http://rmr.smr.ma/archives'
     file = open('rmr.smr.ma.txt','w')

@@ -287,5 +287,15 @@ def scrapeStructure_N():
         print(f'Gathered {len(Abstracts)} Abstracts!')
         driver1.close()
 
-
+def scrapeStructure_H2():
+    Sections = driver.find_elements(By.TAG_NAME,'div')
+    for Section in Sections:
+        if Section.get_attribute('class') == 'kcite-section':
+            issues_section = Section
+    links_in_section = issues_section.find_elements(By.TAG_NAME,'a')
+    for link in links_in_section:
+        if link.get_attribute('title') == '':
+            Issues_links.append(link.get_attribute('href'))
+            print(f'{len(Issues_links)} issues gathered')
+    getPDFsInIssuesBY('href','.pdf')
 
