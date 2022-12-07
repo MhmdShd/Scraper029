@@ -1,6 +1,4 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
+
 from time import sleep
 import io
 import requests
@@ -15,16 +13,6 @@ sites = websites.readlines()
 
 # for site in sites:
 #     articles.append(site)
-
-# headless options
-options = Options()
-options.add_argument('--headless')
-options.add_argument("--disable-gpu")
-options.add_experimental_option('excludeSwitches', ['enable-logging'])
-options.add_argument('--ignore-ssl-errors=yes')
-options.add_argument('--ignore-certificate-errors')
-driver = webdriver.Chrome(options=options)
-
 
 
 def scrapeStructure_A(page, main): # requests
@@ -297,68 +285,56 @@ def J_getPDFs(main):
     PDF_links = list(dict.fromkeys(temp_PDF_links))
     print(f'Gathered a total of {len(PDF_links)} PDFs')
 
-def scrapeStructure_K():
+def scrapeStructure_K(page,main =''): # requests
     Volume_links_temp =[]
     global Volume_links
-    divs = driver.find_elements(By.TAG_NAME,'div')
-    for div in divs:
-        if div.get_attribute('class') == '_3R-H1':
-            links = div.find_elements(By.TAG_NAME,'a')
-            for link in links:
-                if link.get_attribute('href') != None:
-                    Volume_links_temp.append(link.get_attribute('href'))
+    soup = parse(page)
+    for link in soup.find('div',{'class':'_3R-H1'}).find_all('a'):
+        try:
+            Volume_links_temp.append(link['href'])
+            print(link['href'])
+        except:
+            pass
     Volume_links = list(dict.fromkeys(Volume_links_temp))
     print(f'Gathered a total of {len(Volume_links)} Volumes')
     K_getPDFs()
-def K_getPDFs():#PDF_Pages
+def K_getPDFs():
     PDF_Pages_temp =[]
     PDF_Pages =[]
     global PDF_links
     while len(Volume_links)>0:
-        volume = Volume_links.pop()
-        print(volume)
-        driver1 = webdriver.Chrome(options=options)
-        driver1.get(volume)
-        divs = driver1.find_elements(By.TAG_NAME,'div')
-        for div in divs:
-            if div.get_attribute('class') == '_3K7uv':
-                links = div.find_elements(By.TAG_NAME,'a')
-                for link in links:
-                    if '_files' in link:
-                        PDF_Pages_temp.append(link.get_attribute('href'))
-                        print(link.get_attribute('href'))
-        driver1.close()
-        print(f'\ngrathered {len(PDF_Pages_temp)} PDF Pages in this volume')
+        soup = parse(Volume_links.pop())
+        for link in soup.find('div',{'class':'_3K7uv'}).find_all('a'):
+            try:
+                PDF_Pages_temp.append(link['href'])
+                print(link['href'])
+            except:
+                pass
         print(f'{len(Volume_links)} not scanned yet')
-
     PDF_Pages = list(dict.fromkeys(PDF_Pages_temp))
-
+    print(f'Gathered {len(PDF_Pages)} PDF Pages')
     # get pdf links form pages
-
-    PDF_links = getAttribute_By_TagName_TextInType(PDF_Pages,'a','href','.pdf','href')
+    PDF_links = findAttrintarget(PDF_Pages,'a','_files','href','href')
     print(f'Gathered a total of {len(PDF_links)} PDFs')
 
 def scrapeStructure_L(page,main): # requests
     global Issues_links,PDF_links
     Issues_links = findAttrintarget([page],'a','--vol','href','href',main)
-    getIssuesBY('href','--vol',driver)
     PDF_links = findElemintargetByPartialText(Issues_links,'a','Download','href',main)
 
-def scrapeStructure_M():
-    volumes = driver.find_elements(By.TAG_NAME,'a')
+def scrapeStructure_M(page,main = ''): # requests
+    soup = parse(page)
+    volumes = soup.find_all('a')
     Abstract_links =[]
     for volume in volumes:
-        if 'ajpp/archive/' in volume.get_attribute('href').lower():
-            Volume_links.append(volume.get_attribute('href'))
-            print(volume.get_attribute('href'))
+        if 'ajpp/archive/' in volume['href'].lower():
+            Volume_links.append(main + volume['href'])
+            print(volume['href'])
     print(f'Gathered a total of {len(Volume_links)} Volumes')
-
-    Issues_links = getAttribute_By_TagName_TextInType(Volume_links,'a','href','ajpp/edition','href')
-    Abstract_links = getAttribute_By_TagName_TextInType(Issues_links,'a','href','article-abstract','href')
-
-        # scrapeStructure('href','ajpp/edition','href','article-abstract',0,driver1)
+    Issues_links = findAttrintarget(Volume_links,'a','AJPP/edition','href','href',main)
+    Abstract_links = findAttrintarget(Issues_links,'a','article-abstract','href','href',main)
     for abstract in Abstract_links:
-        PDF_links.append(abstract.replace('abstract','full-text-pdf'))
+        PDF_links.append(main + abstract.replace('abstract','full-text-pdf'))
         print(abstract.replace('abstract','full-text-pdf'))
 
 def scrapeStructure_N(page,main=''): # requests
@@ -378,22 +354,19 @@ def scrapeStructure_N(page,main=''): # requests
         except:
             pass
 
-def scrapeStructure_O():
+def scrapeStructure_O(page,main =''): # requests
     Issues_links_temp = []
-    getVolumesByPartialText2('Volume ')
+    Volume_links = findElemintargetByPartialText([page],'a','Volume ','href',main)
     while len(Volume_links)>0:
-        driver1 = webdriver.Chrome(options=options)
-        driver1.get(Volume_links.pop())
-        getIssuesBY('href','abstract',driver1)
-        Issues_links_temp.extend(Issues_links)
-        print(f'{len(Issues_links_temp)} Issues gathered in total.')
-        driver1.close()
+        soup = parse(Volume_links.pop())
+        Issues_links_temp = findAttrintarget(Volume_links,'a','abstract','hef','href',main)
+        Issues_links.extend(Issues_links_temp)
+        print(f'{len(Issues_links)} Issues gathered in total.')
     while len(Issues_links)>0:
-        issue = Issues_links.pop()
-        driver1 = webdriver.Chrome(options=options)
-        driver1.get(issue)
-        Abstracts_link.append(issue)
-        Abstracts.append(driver1.find_element(By.ID,'abstracts').text)
+        link = Issues_links.pop()
+        soup = parse(link)
+        Abstracts_link.append(link)
+        Abstracts.append(soup.find('div',{'id':'abstracts'}).text)
 
 def scrapeStructure_P(main): # requests
 
@@ -445,56 +418,6 @@ def scrapeStructure_Q(page): # requests
             pass
 
 # joker functions
-def scrapeStructure(issueType,issueTxt,PDFType,PDFText,Sleep=0,Driver=driver):
-    getIssuesBY(issueType,issueTxt,Driver)
-    print(f'\nGathered a total of {len(Issues_links)} Issues')
-    Driver.close()
-    getPDFsInIssuesBY(PDFType,PDFText,Sleep)
-    print(f'Gathered a total of {len(PDF_links)} PDFs at this point')
-def getIssuesBY(type,txt,Driver=driver):
-    global Issues_links
-    temp_Issues_links =[]
-    Issues = Driver.find_elements(By.TAG_NAME,'a')
-    for link in Issues:
-        try:
-            href = link.get_attribute('href')
-            if link.get_attribute(type) != None:
-                if txt.lower() in link.get_attribute(str(type).lower()):
-                    if '#' not in link.get_attribute(str(type).lower()):
-                        temp_Issues_links.append(href)
-                        print(href)
-        except:
-            pass 
-    for x in list(dict.fromkeys(temp_Issues_links)):
-        Issues_links.append(x)
-    print(f'\nGathered a total of {len(Issues_links)} Issues')
-def getPDFsInIssuesBY(type,txt,Sleep=0):
-    global PDF_links
-    Temp_PDF_links=[]
-    while (len(Issues_links)>0):
-        issue = Issues_links.pop()
-        if issue == 'https://journals.ju.edu.jo/JMJ/issue/view/357':
-            issue = 'https://journals.ju.edu.jo/JMJ/issue/view/357/showToc'
-        driver = webdriver.Chrome(options=options)
-        driver.get(issue)
-        sleep(Sleep)
-        links = driver.find_elements(By.TAG_NAME, 'a')
-
-        for link in links:
-            try:
-                href = link.get_attribute('href')
-                if link.get_attribute(type) != None:
-                    if txt in link.get_attribute(str(type)).lower():
-                        Temp_PDF_links.append(href)
-                        print(f'\n{len(Temp_PDF_links)} PDFs gathered')
-                        print(href)
-            except:
-                pass
-        print(f'\nIssue {len(Issues_links)} left')
-        for x in list(dict.fromkeys(Temp_PDF_links)):
-            PDF_links.append(x)
-        print(f'Gathered a total of {len(PDF_links)} PDFs at this point')
-        driver.close()
 def keywordScan():
     if len(PDF_links) != 0:
         print('started API scan on PDFs')
@@ -527,17 +450,6 @@ def keywordScan():
                 print(f'\n{len(Detected_Abstract_link)} Abstracts detected.')
                 # Detected_title.append(Title_name[count])
             print(f'\n\n{len(Abstracts)} Abstracts not scanned yet')
-def scrapeStructureComplex(issue_attr, issue_text, type1, Article_Page_Tag, Article_Page_attr, Partial_text, Article_Page_attr_text, Retreived_attr_Article, type2, PDF_file_Tag, PDF_file_attr, PDF_file_text, Retreived_attr_PDF, Driver=driver):
-    global PDF_links
-    getIssuesBY(issue_attr,issue_text,Driver)
-    print(f'\nGathered a total of {len(Issues_links)} Issues')
-    if type1 == 'PT':
-        PDF_Pages = getAttribute_By_PartialText_TextinType(Issues_links, Partial_text, Article_Page_attr, Article_Page_attr_text, Retreived_attr_Article)
-    else:
-        PDF_Pages = getAttribute_By_TagName_TextInType(Issues_links,Article_Page_Tag,Article_Page_attr,Article_Page_attr_text,Retreived_attr_Article)
-    print(f'Gathered {len(PDF_Pages)} PDF Pages')
-    PDF_links = getAttribute_By_TagName_TextInType(PDF_Pages,PDF_file_Tag,PDF_file_attr,PDF_file_text,Retreived_attr_PDF)
-    print(f'Gathered {len(PDF_links)} PDF Links')
 def scrapeRequests(page,main,issueTag,issueTxtSearch,issueattrSearch,IssueTargetAttr,PDfTag,PDFTxtSearch,PDFattrSearch,PDFTargetAttr,stat=True):
             global Volume_links, Issues_links,PDF_links
             Volume_links.append(page)
@@ -581,6 +493,7 @@ def findAttrintarget(pages,tag,text,attr,target,main='',stat=True):
                     raise SystemExit
             else:
                 print('unexpected error occured')
+                raise SystemExit
         print(url)
         for link in soup.find_all(tag):
             try:
@@ -594,6 +507,7 @@ def findAttrintarget(pages,tag,text,attr,target,main='',stat=True):
                             result.append(main + link[target])
             except:
                 pass
+        print(f'{len(pages)} Targets left.')
     return list(dict.fromkeys(result))
 def findElemintargetByPartialText(pages, tag,text, target,main =''):
     result = []
@@ -607,93 +521,8 @@ def findElemintargetByPartialText(pages, tag,text, target,main =''):
                 except:
                     pass
     return list(dict.fromkeys(result))
-def getVolumesByPartialText2(text):
-    global Volume_links
-    Links = driver.find_elements(By.PARTIAL_LINK_TEXT, text)
-    i = 1
-    for link in Links:
-        Href = link.get_attribute('href')
-        if Href != None:
-            Volume_links.append(Href)   
-            print(f'{len(Volume_links)} Volumes gathered\n')
 
 
-# need more editing to suit all structures, works fine now
-def getAttribute_By_TagName_TextInType(link_list, tag_name, Search_attr, Search_attr_txt, Target_attr):
-    print('getAttribute_By_TagName_TextInType')
-    result_temp = []
-    result = []
-    while len(link_list)>0:
-        link = link_list.pop()
-        driver1 = webdriver.Chrome(options=options)
-        driver1.get(link)
-        print('\n'+link)
-        tags = driver1.find_elements(By.TAG_NAME,tag_name)
-        for tag in tags:
-            try:
-                if tag.get_attribute(Search_attr) != None and tag.get_attribute(Target_attr) != None:
-                    if Search_attr_txt.lower() in tag.get_attribute(Search_attr).lower():
-                        result_temp.append(tag.get_attribute(Target_attr))
-                        print(f'Gathered {len(result_temp)} Target')
-            except:
-                pass
-        result = list(dict.fromkeys(result_temp))
-        print(len(result))
-        driver1.close()
-        print(f'{len(link_list)} link remaining in provided list')
-    return result
-def getAttribute_By_TagName_TextEqualType(link_list, tag_name, Search_attr, Search_attr_txt, Target_attr):
-    print('getAttribute_By_TagName_TextEqualType')
-    result_temp = []
-    result = []
-    for link in link_list:
-        driver1 = webdriver.Chrome(options=options)
-        driver1.get(link)
-        tags = driver1.find_elements(By.TAG_NAME,tag_name)
-        for tag in tags:
-            if tag.get_attribute(Search_attr) != None and tag.get_attribute(Target_attr) != None:
-                if tag.get_attribute(Search_attr) == Search_attr_txt:
-                    result_temp.append(tag.get_attribute(Target_attr))
-            print(f'Gathered {len(result_temp)} Target')
-        print(len(result_temp))
-        result = list(dict.fromkeys(result_temp))
-        driver1.close()
-    return result
-def getAttribute_By_PartialText_TextEqualType(link_list, Partial_text, Search_attr, Search_attr_txt, Target_attr):
-    print('getAttribute_By_PartialText_TextEqualType')
-    result_temp = []
-    result = []
-    for link in link_list:
-        driver1 = webdriver.Chrome(options=options)
-        driver1.get(link)
-        tags = driver1.find_elements(By.PARTIAL_LINK_TEXT,Partial_text)
-        for tag in tags:
-            if tag.get_attribute(Search_attr) != None and tag.get_attribute(Target_attr) != None:
-                if tag.get_attribute(Search_attr) == Search_attr_txt:
-                    result_temp.append(tag.get_attribute(Target_attr))
-            print(f'Gathered {len(result_temp)} Target')
-        print(len(result_temp))
-        result = list(dict.fromkeys(result_temp))
-        driver1.close()
-    return result
-def getAttribute_By_PartialText_TextinType(link_list, Partial_text, Search_attr, Search_attr_txt, Target_attr):
-    print('getAttribute_By_PartialText_TextinType')
-    result_temp = []
-    result = []
-    while len(link_list)>0:
-        link = link_list.pop()
-        driver1 = webdriver.Chrome(options=options)
-        driver1.get(link)
-        tags = driver1.find_elements(By.PARTIAL_LINK_TEXT,Partial_text)
-        for tag in tags:
-            if tag.get_attribute(Search_attr) != None and tag.get_attribute(Target_attr) != None:
-                if Search_attr_txt in tag.get_attribute(Search_attr):
-                    result_temp.append(tag.get_attribute(Target_attr))
-            print(f'Gathered {len(result_temp)} Target')
-        driver1.close()
-    result = list(dict.fromkeys(result_temp))
-    print(len(result))
-    return result
 
 
 errors = open('ErrorLogs.txt','w')
@@ -715,7 +544,7 @@ article = article.replace(' ','')
 print(article)
 file = ''
 
-if 'journals.ekb.eg' in article: # switched to requests
+if 'journals.ekb.eg' in article:
     if 'bfpc' in  article:
         archives_page = 'https://bfpc.journals.ekb.eg/'
         scrapeStructure_G(archives_page,'https://bfpc.journals.ekb.eg/')
@@ -734,8 +563,7 @@ if 'journals.ekb.eg' in article: # switched to requests
             file = open("aeji.journals.ekb.eg.txt",'w')
             main = 'https://aeji.journals.ekb.eg/'
         scrapeStructure_A(archives_page, main)
-if '.asp' in article: # switched to requests / PDF links needs to be updated every x hours - links always changing.
-    driver.close()
+if '.asp' in article: # PDF links needs to be updated every x hours - links always changing.
     if 'ljmsonline' in article:
         archives_page = 'https://www.ljmsonline.com/backissues.asp'
         main= 'https://www.ljmsonline.com/'
@@ -769,7 +597,7 @@ if '.asp' in article: # switched to requests / PDF links needs to be updated eve
         main = 'https://www.mmjonweb.org/'
         file = open('www.mmjonweb.org.txt','w')
     scrapeStructure_B(archives_page,main)
-if 'www.easpublisher.com/journal' in article: # switched to requests
+if 'www.easpublisher.com/journal' in article:
     if 'easjms' in article: # done
         archives_page ='https://www.easpublisher.com/journal/easjms/archives'
         file = open('www.easpublisher.com-easjms.txt','w')
@@ -787,7 +615,7 @@ if 'www.easpublisher.com/journal' in article: # switched to requests
         file = open('www.easpublisher.com-easms.txt','w')
     main = 'https://www.easpublisher.com/'
     scrapeRequests(archives_page,main,'a','issue-box','class','href','a','.pdf','href','href')
-if 'saudijournals.com' in article: # switched to requests
+if 'saudijournals.com' in article:
     if 'sjmps/' in article:
         archives_page = 'https://saudijournals.com/journal/sjmps/archives'
         file = open('www.saudijournals.com-sjmps.txt','w')
@@ -801,7 +629,7 @@ if 'saudijournals.com' in article: # switched to requests
         archives_page ='https://saudijournals.com/journal/sjls/archives'
         file = open('www.saudijournals.com-sjls.txt','w')
     scrapeRequests(archives_page,main,'a','issue-box','class','href','a','.pdf','href','href')
-if 'amj' in article or 'iphr' in article or 'bjsrg' in article: # switched to requests
+if 'amj' in article or 'iphr' in article or 'bjsrg' in article:
     if 'amj' in article:
         archives_page = 'https://amj.uoanbar.edu.iq/'
         file = open('amj.uoanbar.edu.iq.txt','w')
@@ -846,12 +674,12 @@ if 'www.iasj.net' in article: # first page is dynamic
     PDF_links.clear()
     for link in temp:
         PDF_links.append(link.replace('pdf','download'))
-if 'batnajms' in article: # switched to requests
+if 'batnajms' in article:
     archives_page = 'https://batnajms.net/2019/11/archives-de-la-revue/'
     file = open('batnajms.net.txt','w')
     main = 'https://batnajms.net/'
     scrapeStructure_F(archives_page,main)
-if 'journals.ju' in article: # switched to requests
+if 'journals.ju' in article:
     if 'JJPS' in article:
         archives_page = 'http://journals.ju.edu.jo/JJPS/issue/archive'
         file = open('journals.ju.edu.jo-JJPS.txt','w')
@@ -859,12 +687,12 @@ if 'journals.ju' in article: # switched to requests
         archives_page = 'http://journals.ju.edu.jo/JMJ/issue/archive'
         file = open('journals.ju.edu.jo-JMJ.txt','w')
     scrapeRequests(archives_page,'','a','issue/view','href','href','a','target=_blank','href','href')
-if 'www.karger.com/' in article: # switched to requests
+if 'www.karger.com/' in article:
     archives_page = 'https://www.karger.com/Journal/Issue/281490'
     main = 'https://www.karger.com/'
     file = open('www.karger.com.txt','w')
     scrapeStructure_C(archives_page,main)
-if 'springeropen' in article:# switched to requests
+if 'springeropen' in article:
     if 'ejb' in article:
         archives_page='https://ejb.springeropen.com/articles'
         Issues_links.append('https://ejb.springeropen.com/articles')
@@ -875,19 +703,18 @@ if 'springeropen' in article:# switched to requests
         Issues_links.append('https://ejim.springeropen.com/articles')
         file = open('ejim.springeropen.com.txt','w')
         main = 'https://ejim.springeropen.com/'
-    driver.close()
     scrapeStructure_D(archives_page,main) 
-if 'www.journal-jmsr.net/' in article: # switched to requests
+if 'www.journal-jmsr.net/' in article:
     archives_page = 'https://www.journal-jmsr.net/archives.php'
     file = open('www.journal-jmsr.net.txt','w')
     main = 'https://www.journal-jmsr.net/'
     scrapeStructure_E(archives_page,main)   
-if 'lsj.cnrs.edu.lb' in article: # switched to requests
+if 'lsj.cnrs.edu.lb' in article:
     archives_page = 'https://lsj.cnrs.edu.lb/archives/'
     file = open('lsj.cnrs.edu.lb.txt','w')
     main = 'https://lsj.cnrs.edu.lb/'
     scrapeStructure_H(archives_page,main)  
-if 'bahrainmedicalbulletin' in article: # switched to requests
+if 'bahrainmedicalbulletin' in article:
     archives_page = 'https://www.bahrainmedicalbulletin.com/previousisues.html'
     main = 'https://www.bahrainmedicalbulletin.com/'
     file = open('www.bahrainmedicalbulletin.com.txt','w')
@@ -896,7 +723,7 @@ if 'bahrainmedicalbulletin' in article: # switched to requests
     PDF_links.clear()
     for link in temp:
         PDF_links.append(link.replace(' ','%'))
-if 'mchandaids' in article: # switched to requests
+if 'mchandaids' in article:
     archives_page = 'http://mchandaids.org/index.php/IJMA/issue/archive'
     file = open('mchandaids.org.com-IJMA.txt','w')
     main = ''
@@ -908,8 +735,7 @@ if 'mchandaids' in article: # switched to requests
         soup = parse(link)
         PDF_links.append(soup.find('a',{'class','download'})['href'])
         print(f'gathered {len(PDF_links)} PDFs')
-if 'journalskuwait.org' in article: # switched to requests
-    driver.close()
+if 'journalskuwait.org' in article:
     archives_page = 'https://journalskuwait.org/kjs/index.php/KJS/issue/archive'
     file = open('journalskuwait.org-KJS.txt','w')
     main = ''
@@ -921,12 +747,11 @@ if 'journalskuwait.org' in article: # switched to requests
         soup = parse(link)
         PDF_links.append(soup.find('a',{'class','download'})['href'])
         print(f'gathered {len(PDF_links)} PDFs')
-if 'mjemonline.com' in article: # switched to requests
+if 'mjemonline.com' in article:
     archives_page = 'https://www.mjemonline.com/index.php/mjem/issue/archive'
     file = open('www.mjemonline.com.txt','w')
     main = ''
     scrapeRequests(archives_page,main,'a','issue/view','href','href','a','btn-primary','class','href')
-    # scrapeStructure('href','issue/view','class','btn btn-primary',0,driver)
     print(f'{len(PDF_links)}')
     temp = PDF_links.copy()
     PDF_links.clear()
@@ -936,13 +761,12 @@ if 'mjemonline.com' in article: # switched to requests
             if 'download' in link['href']:
                 PDF_links.append(link['href'])
                 print(f'gathered {len(PDF_links)} PDFs')
-if 'ljmr.com' in article: # switched to requests
-    driver.close()
+if 'ljmr.com' in article:
     archives_page = 'http://www.ljmr.com.ly/index.php?option=com_content&view=category&id=27&Itemid=167'
     file = open('www.ljmr.com.ly.txt','w', encoding="utf-8")
     main = 'http://www.ljmr.com.ly/'
     scrapeStructure_I(archives_page,main)
-if 'uomustansiriyah' in article: # switched to requests
+if 'uomustansiriyah' in article:
     archives_page = 'https://ajps.uomustansiriyah.edu.iq/index.php/AJPS/issue/archive'
     file = open('ajps.uomustansiriyah.edu.iq.txt','w')
     main = ''
@@ -953,7 +777,7 @@ if 'uomustansiriyah' in article: # switched to requests
         soup = parse(link)
         PDF_links.append(soup.find('a',{'class','download'})['href'])
         print(f'gathered {len(PDF_links)} PDFs')
-if 'uobaghdad' in article: # switched to requests
+if 'uobaghdad' in article:
     if 'jkmc' in article:
         archives_page = 'https://jkmc.uobaghdad.edu.iq/index.php/MEDICAL/issue/archive'
         file = open('jkmc.uobaghdad.edu.iq.txt','w')
@@ -971,7 +795,7 @@ if 'uobaghdad' in article: # switched to requests
             print(f'gathered {len(PDF_links)} PDFs')
         except:
             pass   
-if 'mbmj.org' in article: # switched to requests
+if 'mbmj.org' in article:
     archives_page = 'https://www.mbmj.org/index.php/ijms/issue/archive'
     file = open('www.mbmj.org.txt','w')
     main = ''
@@ -987,35 +811,26 @@ if 'mbmj.org' in article: # switched to requests
                     print(f'gathered {len(PDF_links)} PDFs')
             except:
                 pass
-if 'qscience.com' in article: # switched to requests
-    driver.close()
+if 'qscience.com' in article:
     archives_page = 'https://www.qscience.com/content/journals/jemtac/2022/4'
     file = open('www.qscience.com.txt','w')
     main = 'https://www.qscience.com/'
-    driver = webdriver.Chrome(options=options)
-    driver.get(archives_page)
     scrapeStructure_J(archives_page,main)
 if 'rmsjournal.org/' in article:# missing: going to multi pages inside the issue
     archives_page = 'http://rmsjournal.org/Archive.aspx'
     file = open('rmsjournal.org.txt','w')
-    driver.close()
-    driver = webdriver.Chrome(options=options)
-    driver.get(archives_page)
-    scrapeStructure('href','articles.aspx','href','.pdf',0,driver)
-if 'www.annalsofafricansurgery' in article: # needs webdriver installed and added to path
+    # scrapeStructure('href','articles.aspx','href','.pdf',0,driver)
+if 'www.annalsofafricansurgery' in article:
     archives_page ='https://www.annalsofafricansurgery.com/past-publications'
     file = open('www.annalsofafricansurgery.com.txt','w')
     Volume_links.append('https://www.annalsofafricansurgery.com/current-issue') # current issue is not present in past issues page
-    driver.close()
-    driver = webdriver.Chrome(options=options)
-    driver.get(archives_page)
-    scrapeStructure_K()
-if 'jomenas.org' in article: # switched to requests
+    scrapeStructure_K(archives_page)
+if 'jomenas.org' in article:
     archives_page = 'https://www.jomenas.org/home.html'
     file = open('www.jomenas.org.com.txt','w')
     main = 'https://www.jomenas.org/'
     scrapeStructure_L(archives_page,main)
-if 'gssrr.org' in article: # switched to requests
+if 'gssrr.org' in article:
     archives_page = 'https://gssrr.org/index.php/JournalOfBasicAndApplied/issue/archive'
     file = open('gssrr.org.txt','w')
     main = ''
@@ -1029,23 +844,19 @@ if 'gssrr.org' in article: # switched to requests
             print(f'gathered {len(PDF_links)} PDFs')
         except:
             pass 
-if 'asjp.cerist.dz' in article: # switched to requests
+if 'asjp.cerist.dz' in article:
     archives_page = 'https://www.asjp.cerist.dz/en/Articles/506'
     file = open('www.asjp.cerist.dz.txt','w')
     main = ''
     scrapeRequests(archives_page,main,'a','en/article/','href','href','a','downArticle','href','href')
-if 'academicjournals' in article: # needs webdriver installed and added to path
+if 'academicjournals' in article:
     archives_page = 'https://academicjournals.org/journal/AJPP/archive'
     file = open('academicjournals.org.txt','w')
-    driver.close()
-    driver = webdriver.Chrome(options=options)
-    driver.get(archives_page)
-    scrapeStructure_M()
-if 'bhmedsoc.com' in article: # switched to requests
+    scrapeStructure_M(archives_page,'https://academicjournals.org/')
+if 'bhmedsoc.com' in article:
     current_year = datetime.date.today().year
     issue_year = 2018
     issue_nb = 1
-    driver.close()
     PDF_links_temp = []
     file = open('www.bhmedsoc.com.txt','w')
     PDF_nbs = len(PDF_links_temp)
@@ -1053,7 +864,6 @@ if 'bhmedsoc.com' in article: # switched to requests
     while issue_year <= current_year:
         Issues_links.append(f'https://www.bhmedsoc.com/jbms/archives.php?Article_Published_Year={issue_year}&Issues={issue_nb}')
         PDF_links = findAttrintarget(Issues_links,'a','.pdf','href','href',main)
-        # getPDFsInIssuesBY('href','.pdf')
         PDF_links_temp.extend(PDF_links)
         if PDF_nbs == len(PDF_links_temp):
             issue_year += 1
@@ -1063,7 +873,7 @@ if 'bhmedsoc.com' in article: # switched to requests
         PDF_nbs = len(PDF_links_temp)
         print(f'{PDF_nbs} added till now')
     PDF_links = PDF_links_temp.copy()
-if 'ajol.info' in article: # switched to requests
+if 'ajol.info' in article:
     if 'jmbs' in article:
         archives_page ='https://www.ajol.info/index.php/jmbs/issue/archive'
         file = open('www.ajol.info-jmbs.txt','w')
@@ -1084,30 +894,26 @@ if 'ajol.info' in article: # switched to requests
         file = open('www.ajol.info-ajst.txt','w')
     main = ''
     scrapeRequests(archives_page,main,'a','issue/view','href','href','a','obj_galley_link','class','href')
-if 'ejmsonline.org' in article: # needs webdriver installed and added to path
-    driver.close()
-    archives_page = 'http://www.ejmsonline.org/volumes/35'
+if 'ejmsonline.org' in article: # SITE IS DOWN
+    archives_page = 'https://www.ejmsonline.org/volumes/35'
     file = open('www.ejmsonline.org-Abstracts.txt','w')
-    driver = webdriver.Chrome(options=options)
-    driver.get(archives_page)
-    scrapeStructure_O()
+    scrapeStructure_O(archives_page)
     print(len(Abstracts_link))
     for link in Abstracts_link:
         file.write(link+'\n')
     file.close()
-if 'me-jaa.com' in article: # switched to requests
+if 'me-jaa.com' in article:
     archives_page = 'http://www.me-jaa.com/me-jaapastissues.htm'
     file = open('www.me-jaa.com.txt','w')
     main = 'http://www.me-jaa.com/'
     Issues_links.append(archives_page)
     PDF_links = findAttrintarget(Issues_links,'a','.pdf','href','href',main)
-if 'mejfm.com' in article: # switched to requests
-    driver.close()
+if 'mejfm.com' in article:
     archives_page = 'http://www.mejfm.com/journal.htm'
     file = open('www.mejfm.com.txt','w')
     main = 'http://www.mejfm.com/'
     scrapeStructure_P(main)
-if 'journals.uokerbala.edu.iq' in article: # switched to requests
+if 'journals.uokerbala.edu.iq' in article:
     archives_page = 'https://journals.uokerbala.edu.iq/index.php/kj/issue/archive'
     file = open('journals.uokerbala.edu.iq-PDFs.txt','w')
     abstract = open('journals.uokerbala.edu.iq-abstracts.txt','w')
@@ -1124,14 +930,14 @@ if 'journals.uokerbala.edu.iq' in article: # switched to requests
             print(f'gathered {len(PDF_links)} PDFs')
         except:
             pass 
-if 'www.iraqijms.net' in article: # switched to requests
+if 'www.iraqijms.net' in article:
     archives_page = 'https://www.iraqijms.net/archive.html#parentVerticalTab10'
     file = open('www.iraqijms.net.txt','w')
     main = 'https://www.iraqijms.net/'
     scrapeRequests(archives_page,main,'a','issue&id=','href','href','a','.pdf','href','href')
     temp = PDF_links.copy()
     PDF_links = list(dict.fromkeys(temp))
-if 'iraqmedj.org' in article: # switched to requests
+if 'iraqmedj.org' in article:
     archives_page = 'https://iraqmedj.org/index.php/imj/issue/archive'
     file = open('iraqmedj.org-PDFs.txt','w')
     abstract = open('iraqmedj.org-abstracts.txt','w')
@@ -1148,27 +954,16 @@ if 'iraqmedj.org' in article: # switched to requests
             print(f'gathered {len(PDF_links)} PDFs')
         except:
             pass 
-if 'rmr.smr.ma/' in article: # working on switching to requests
+if 'rmr.smr.ma/' in article:
     archives_page = 'http://rmr.smr.ma/archives'
     file = open('rmr.smr.ma.txt','w')
     main = 'http://rmr.smr.ma/'
-    # driver.close()
-    # driver = webdriver.Chrome(options=options)
-    # driver.get(archives_page)
-    
-    Issues_links.append(archives_page)
-    print(len(Issues_links))
-    Issues_links = findAttrintarget(Issues_links,'a','dernier-numero','href','href',main)
-    # getIssuesBY('href','dernier-numero',driver)
-    print(len(Issues_links))
-    scrapeRequests(Issues_links,main,'a','/archives/','href','href','a','/archives/','href','href')
-
-    # scrapeStructure('href','/archives/','href','/archives/',0,driver)
+    Issues_links.append(main+'/dernier-numero')
+    scrapeRequests(archives_page,main,'a','/archives/','href','href','a','/archives/','href','href')
     Issues_links = PDF_links.copy()
     PDF_links.clear()
     PDF_links = findAttrintarget(Issues_links,'a','task=download','href','href',main)
-    # getPDFsInIssuesBY('href','task=download')
-if 'hsd-fmsb.org' in article: # switched to requests
+if 'hsd-fmsb.org' in article:
     archives_page = 'https://www.hsd-fmsb.org/index.php/hsd/issue/archive'
     file = open('www.hsd-fmsb.org.txt','w')
     main = ''
@@ -1182,28 +977,26 @@ if 'hsd-fmsb.org' in article: # switched to requests
             print(f'gathered {len(PDF_links)} PDFs')
         except:
             pass
-if 'phcfm.org' in article: # switched to requests / not finished test run, takes some time
+if 'phcfm.org' in article:
     archives_page = 'https://phcfm.org/index.php/phcfm/issue/archive'
     file = open('phcfm.org.txt','w')
     PDF_links = findAttrintarget(findElemintargetByPartialText(findAttrintarget([archives_page],'a','issue/view','href','href'), 'a', 'PDF','href'),'iframe','pdf.js','src','src')
-if 'anafrimed.net' in article: # switched to requests
+if 'anafrimed.net' in article:
     archives_page = 'http://anafrimed.net/rubrique/archives/'
     file = open('anafrimed.net.txt','w')
-    driver.close()
     scrapeStructure_Q(archives_page)
-if 'jaccrafrica.com' in article: # switched to requests
+if 'jaccrafrica.com' in article:
     archives_page = 'https://www.jaccrafrica.com/Publications/'
     file = open('www.jaccrafrica.com.txt','w')
     main = 'https://www.jaccrafrica.com/'
     PDF_links = findAttrintarget([archives_page],'a','.pdf','href','href',main)
-if 'medtech.ichsmt.org' in article: # switched to requests / ending with 0 PDFs?
+if 'medtech.ichsmt.org' in article:
     archives_page = 'https://jkmc.uobaghdad.edu.iq/index.php/MEDICAL/issue/archive'
     file = open('medtech.ichsmt.org.txt','w')
     main = ''
     scrapeRequests(archives_page,main,'a','issue/view','href','href','a','obj_galley_link','class','href')
     temp = PDF_links.copy()
     PDF_links.clear()
-    print(len(temp))
     for link in temp:
         soup = parse(link)
         try:
@@ -1211,8 +1004,9 @@ if 'medtech.ichsmt.org' in article: # switched to requests / ending with 0 PDFs?
             print(soup.find('a',{'class','download'})['href'])
             print(f'gathered {len(PDF_links)} PDFs')
         except:
+            print(link)
             pass
-if 'revues.imist.ma' in article: # switched to requests
+if 'revues.imist.ma' in article:
     archives_page = 'https://revues.imist.ma/index.php/A2S/issue/archive'
     file = open('revues.imist.ma.txt','w')
     PDF_links = findAttrintarget(findAttrintarget(findAttrintarget([archives_page],'a','issue/view','href','href'), 'a', 'file','class','href',),'iframe','pdf.js','src','src')
@@ -1223,11 +1017,7 @@ else:
     print(f'Gathered a total of {len(PDF_links)} PDFs')
     for link in PDF_links:
         file.write(link+'\n')
-    file.close()    
-    try:
-        driver.close()
-    except:
-        pass
+    file.close()
 errors.close()
 
 

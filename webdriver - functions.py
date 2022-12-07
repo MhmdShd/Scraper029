@@ -1,3 +1,7 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from time import sleep
 # -------------------------------------
 # -------------------------------------
 # -------------------------------------
@@ -7,6 +11,15 @@
 # -------------------------------------
 # -------------------------------------
 # -------------------------------------
+# headless options
+options = Options()
+options.add_argument('--headless')
+options.add_argument("--disable-gpu")
+options.add_experimental_option('excludeSwitches', ['enable-logging'])
+options.add_argument('--ignore-ssl-errors=yes')
+options.add_argument('--ignore-certificate-errors')
+driver = webdriver.Chrome(options=options)
+
 
 def scrapeStructure_B2():
     getIssuesBY('title','table of contents',driver)
@@ -132,7 +145,7 @@ def scrapeStructure_C2():
             Next_driver = None    
         driver3.close()
     print('\nno more next versions')
-def C_getPDFs2(Driver):
+def C_getPDFs(Driver):
     Links  = Driver.find_elements(By.TAG_NAME, 'a')
     for PDF_page in Links:
         href = PDF_page.get_attribute('href')
@@ -318,10 +331,227 @@ def L_getPDFs2():
             print(link.get_attribute('href'))
         driver1.close()
 
+def scrapeStructure_K2():
+    Volume_links_temp =[]
+    global Volume_links
+    divs = driver.find_elements(By.TAG_NAME,'div')
+    for div in divs:
+        if div.get_attribute('class') == '_3R-H1':
+            links = div.find_elements(By.TAG_NAME,'a')
+            for link in links:
+                if link.get_attribute('href') != None:
+                    Volume_links_temp.append(link.get_attribute('href'))
+    Volume_links = list(dict.fromkeys(Volume_links_temp))
+    print(f'Gathered a total of {len(Volume_links)} Volumes')
+    K_getPDFs()
+def K_getPDFs2():#PDF_Pages
+    PDF_Pages_temp =[]
+    PDF_Pages =[]
+    global PDF_links
+    while len(Volume_links)>0:
+        volume = Volume_links.pop()
+        print(volume)
+        driver1 = webdriver.Chrome(options=options)
+        driver1.get(volume)
+        divs = driver1.find_elements(By.TAG_NAME,'div')
+        for div in divs:
+            if div.get_attribute('class') == '_3K7uv':
+                links = div.find_elements(By.TAG_NAME,'a')
+                for link in links:
+                    if '_files' in link:
+                        PDF_Pages_temp.append(link.get_attribute('href'))
+                        print(link.get_attribute('href'))
+        driver1.close()
+        print(f'\ngrathered {len(PDF_Pages_temp)} PDF Pages in this volume')
+        print(f'{len(Volume_links)} not scanned yet')
 
+    PDF_Pages = list(dict.fromkeys(PDF_Pages_temp))
 
+    # get pdf links form pages
 
+    PDF_links = getAttribute_By_TagName_TextInType(PDF_Pages,'a','href','.pdf','href')
+    print(f'Gathered a total of {len(PDF_links)} PDFs')
 
+def scrapeStructure_O2():
+    Issues_links_temp = []
+    getVolumesByPartialText2('Volume ')
+    while len(Volume_links)>0:
+        driver1 = webdriver.Chrome(options=options)
+        driver1.get(Volume_links.pop())
+        getIssuesBY('href','abstract',driver1)
+        Issues_links_temp.extend(Issues_links)
+        print(f'{len(Issues_links_temp)} Issues gathered in total.')
+        driver1.close()
+    while len(Issues_links)>0:
+        issue = Issues_links.pop()
+        driver1 = webdriver.Chrome(options=options)
+        driver1.get(issue)
+        Abstracts_link.append(issue)
+        Abstracts.append(driver1.find_element(By.ID,'abstracts').text)
 
+def scrapeStructure_M2():
+    volumes = driver.find_elements(By.TAG_NAME,'a')
+    Abstract_links =[]
+    for volume in volumes:
+        if 'ajpp/archive/' in volume.get_attribute('href').lower():
+            Volume_links.append(volume.get_attribute('href'))
+            print(volume.get_attribute('href'))
+    print(f'Gathered a total of {len(Volume_links)} Volumes')
 
+    Issues_links = getAttribute_By_TagName_TextInType(Volume_links,'a','href','ajpp/edition','href')
+    Abstract_links = getAttribute_By_TagName_TextInType(Issues_links,'a','href','article-abstract','href')
+
+        # scrapeStructure('href','ajpp/edition','href','article-abstract',0,driver1)
+    for abstract in Abstract_links:
+        PDF_links.append(abstract.replace('abstract','full-text-pdf'))
+        print(abstract.replace('abstract','full-text-pdf'))
+
+# need more editing to suit all structures, works fine now
+def getAttribute_By_TagName_TextInType(link_list, tag_name, Search_attr, Search_attr_txt, Target_attr):
+    print('getAttribute_By_TagName_TextInType')
+    result_temp = []
+    result = []
+    while len(link_list)>0:
+        link = link_list.pop()
+        driver1 = webdriver.Chrome(options=options)
+        driver1.get(link)
+        print('\n'+link)
+        tags = driver1.find_elements(By.TAG_NAME,tag_name)
+        for tag in tags:
+            try:
+                if tag.get_attribute(Search_attr) != None and tag.get_attribute(Target_attr) != None:
+                    if Search_attr_txt.lower() in tag.get_attribute(Search_attr).lower():
+                        result_temp.append(tag.get_attribute(Target_attr))
+                        print(f'Gathered {len(result_temp)} Target')
+            except:
+                pass
+        result = list(dict.fromkeys(result_temp))
+        print(len(result))
+        driver1.close()
+        print(f'{len(link_list)} link remaining in provided list')
+    return result
+def getAttribute_By_TagName_TextEqualType(link_list, tag_name, Search_attr, Search_attr_txt, Target_attr):
+    print('getAttribute_By_TagName_TextEqualType')
+    result_temp = []
+    result = []
+    for link in link_list:
+        driver1 = webdriver.Chrome(options=options)
+        driver1.get(link)
+        tags = driver1.find_elements(By.TAG_NAME,tag_name)
+        for tag in tags:
+            if tag.get_attribute(Search_attr) != None and tag.get_attribute(Target_attr) != None:
+                if tag.get_attribute(Search_attr) == Search_attr_txt:
+                    result_temp.append(tag.get_attribute(Target_attr))
+            print(f'Gathered {len(result_temp)} Target')
+        print(len(result_temp))
+        result = list(dict.fromkeys(result_temp))
+        driver1.close()
+    return result
+def getAttribute_By_PartialText_TextEqualType(link_list, Partial_text, Search_attr, Search_attr_txt, Target_attr):
+    print('getAttribute_By_PartialText_TextEqualType')
+    result_temp = []
+    result = []
+    for link in link_list:
+        driver1 = webdriver.Chrome(options=options)
+        driver1.get(link)
+        tags = driver1.find_elements(By.PARTIAL_LINK_TEXT,Partial_text)
+        for tag in tags:
+            if tag.get_attribute(Search_attr) != None and tag.get_attribute(Target_attr) != None:
+                if tag.get_attribute(Search_attr) == Search_attr_txt:
+                    result_temp.append(tag.get_attribute(Target_attr))
+            print(f'Gathered {len(result_temp)} Target')
+        print(len(result_temp))
+        result = list(dict.fromkeys(result_temp))
+        driver1.close()
+    return result
+def getAttribute_By_PartialText_TextinType(link_list, Partial_text, Search_attr, Search_attr_txt, Target_attr):
+    print('getAttribute_By_PartialText_TextinType')
+    result_temp = []
+    result = []
+    while len(link_list)>0:
+        link = link_list.pop()
+        driver1 = webdriver.Chrome(options=options)
+        driver1.get(link)
+        tags = driver1.find_elements(By.PARTIAL_LINK_TEXT,Partial_text)
+        for tag in tags:
+            if tag.get_attribute(Search_attr) != None and tag.get_attribute(Target_attr) != None:
+                if Search_attr_txt in tag.get_attribute(Search_attr):
+                    result_temp.append(tag.get_attribute(Target_attr))
+            print(f'Gathered {len(result_temp)} Target')
+        driver1.close()
+    result = list(dict.fromkeys(result_temp))
+    print(len(result))
+    return result
+
+# jokers
+def getVolumesByPartialText2(text):
+    global Volume_links
+    Links = driver.find_elements(By.PARTIAL_LINK_TEXT, text)
+    i = 1
+    for link in Links:
+        Href = link.get_attribute('href')
+        if Href != None:
+            Volume_links.append(Href)   
+            print(f'{len(Volume_links)} Volumes gathered\n')
+def scrapeStructureComplex(issue_attr, issue_text, type1, Article_Page_Tag, Article_Page_attr, Partial_text, Article_Page_attr_text, Retreived_attr_Article, type2, PDF_file_Tag, PDF_file_attr, PDF_file_text, Retreived_attr_PDF, Driver=driver):
+    global PDF_links
+    getIssuesBY(issue_attr,issue_text,Driver)
+    print(f'\nGathered a total of {len(Issues_links)} Issues')
+    if type1 == 'PT':
+        PDF_Pages = getAttribute_By_PartialText_TextinType(Issues_links, Partial_text, Article_Page_attr, Article_Page_attr_text, Retreived_attr_Article)
+    else:
+        PDF_Pages = getAttribute_By_TagName_TextInType(Issues_links,Article_Page_Tag,Article_Page_attr,Article_Page_attr_text,Retreived_attr_Article)
+    print(f'Gathered {len(PDF_Pages)} PDF Pages')
+    PDF_links = getAttribute_By_TagName_TextInType(PDF_Pages,PDF_file_Tag,PDF_file_attr,PDF_file_text,Retreived_attr_PDF)
+    print(f'Gathered {len(PDF_links)} PDF Links')
+def scrapeStructure(issueType,issueTxt,PDFType,PDFText,Sleep=0,Driver=driver):
+    getIssuesBY(issueType,issueTxt,Driver)
+    print(f'\nGathered a total of {len(Issues_links)} Issues')
+    Driver.close()
+    getPDFsInIssuesBY(PDFType,PDFText,Sleep)
+    print(f'Gathered a total of {len(PDF_links)} PDFs at this point')
+def getIssuesBY(type,txt,Driver=driver):
+    global Issues_links
+    temp_Issues_links =[]
+    Issues = Driver.find_elements(By.TAG_NAME,'a')
+    for link in Issues:
+        try:
+            href = link.get_attribute('href')
+            if link.get_attribute(type) != None:
+                if txt.lower() in link.get_attribute(str(type).lower()):
+                    if '#' not in link.get_attribute(str(type).lower()):
+                        temp_Issues_links.append(href)
+                        print(href)
+        except:
+            pass 
+    for x in list(dict.fromkeys(temp_Issues_links)):
+        Issues_links.append(x)
+    print(f'\nGathered a total of {len(Issues_links)} Issues')
+def getPDFsInIssuesBY(type,txt,Sleep=0):
+    global PDF_links
+    Temp_PDF_links=[]
+    while (len(Issues_links)>0):
+        issue = Issues_links.pop()
+        if issue == 'https://journals.ju.edu.jo/JMJ/issue/view/357':
+            issue = 'https://journals.ju.edu.jo/JMJ/issue/view/357/showToc'
+        driver = webdriver.Chrome(options=options)
+        driver.get(issue)
+        sleep(Sleep)
+        links = driver.find_elements(By.TAG_NAME, 'a')
+
+        for link in links:
+            try:
+                href = link.get_attribute('href')
+                if link.get_attribute(type) != None:
+                    if txt in link.get_attribute(str(type)).lower():
+                        Temp_PDF_links.append(href)
+                        print(f'\n{len(Temp_PDF_links)} PDFs gathered')
+                        print(href)
+            except:
+                pass
+        print(f'\nIssue {len(Issues_links)} left')
+        for x in list(dict.fromkeys(Temp_PDF_links)):
+            PDF_links.append(x)
+        print(f'Gathered a total of {len(PDF_links)} PDFs at this point')
+        driver.close()
 
