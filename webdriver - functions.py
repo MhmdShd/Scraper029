@@ -267,4 +267,25 @@ def J_getPDFs2(): #PDF_Pages
     print(f'Gathered a total of {len(PDF_links)} PDFs')
 
 
+def scrapeStructure_N():
+    global Abstracts_link,Abstracts
+    Abstract_links_temp = []
+    getIssuesBY('href','issue/view',driver)
+    driver.close()
+    getPDFsInIssuesBY('id','article-')
+    Abstracts_link = PDF_links.copy()
+    Abstract_links_temp = PDF_links.copy()
+    PDF_links.clear()
+    getPDFsInIssuesBY('class','obj_galley_link pdf')
+    print(len(PDF_links))
+    print()
+    print(len(Abstracts_link))
+    while len(Abstract_links_temp)>0:
+        driver1 = webdriver.Chrome(options=options)
+        driver1.get(Abstract_links_temp.pop())
+        Abstracts.append(driver1.find_element(By.CSS_SELECTOR,'.item.abstract').text.lower())
+        print(f'Gathered {len(Abstracts)} Abstracts!')
+        driver1.close()
+
+
 
