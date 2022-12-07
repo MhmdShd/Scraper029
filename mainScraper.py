@@ -523,8 +523,6 @@ def findElemintargetByPartialText(pages, tag,text, target,main =''):
     return list(dict.fromkeys(result))
 
 
-
-
 errors = open('ErrorLogs.txt','w')
 article = input('Journal to be scanned (URL): ')
 year = input('Year span (xxxx-xxxx) - not available yet: ')
@@ -643,7 +641,7 @@ if 'amj' in article or 'iphr' in article or 'bjsrg' in article:
         file = open('bjsrg.uobasrah.edu.iq.txt','w') 
         main = 'https://bjsrg.uobasrah.edu.iq/'
     scrapeRequests(archives_page,main,'a','/issue_','href','href','a','.pdf','href','href')
-if 'www.iasj.net' in article: # first page is dynamic
+if 'www.iasj.net' in article: # Not switched to requests - first page is dynamic
     if '14135' in article or '180' in article:
         archives_page = 'https://www.iasj.net/iasj/journal/180/issues'
         file = open('www.iasj.net-14135.txt','w')
@@ -816,7 +814,7 @@ if 'qscience.com' in article:
     file = open('www.qscience.com.txt','w')
     main = 'https://www.qscience.com/'
     scrapeStructure_J(archives_page,main)
-if 'rmsjournal.org/' in article:# missing: going to multi pages inside the issue
+if 'rmsjournal.org/' in article:# Not switched to requests - missing: going to multi pages inside the issue
     archives_page = 'http://rmsjournal.org/Archive.aspx'
     file = open('rmsjournal.org.txt','w')
     # scrapeStructure('href','articles.aspx','href','.pdf',0,driver)
