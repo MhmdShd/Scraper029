@@ -261,7 +261,6 @@ def I_getPDFs(main):
             print(main + link.find('a')['href'])
     PDF_links = findAttrintarget(PDF_pages,'a','.pdf','href','href',main)
 
-
 def scrapeStructure_J(page, main): # requests
     global Issues_links
     Issues_links = findAttrintarget(findElemintargetByPartialText([page],'a','Volume ','href',main),'a','','href','href',main)
@@ -339,19 +338,11 @@ def K_getPDFs():#PDF_Pages
     PDF_links = getAttribute_By_TagName_TextInType(PDF_Pages,'a','href','.pdf','href')
     print(f'Gathered a total of {len(PDF_links)} PDFs')
 
-def scrapeStructure_L():
+def scrapeStructure_L(page,main): # requests
+    global Issues_links,PDF_links
+    Issues_links = findAttrintarget([page],'a','--vol','href','href',main)
     getIssuesBY('href','--vol',driver)
-    L_getPDFs()
-def L_getPDFs():
-    while len(Issues_links)>0:
-        issue = Issues_links.pop()
-        driver1 = webdriver.Chrome(options=options)
-        driver1.get(issue)
-        links = driver1.find_elements(By.PARTIAL_LINK_TEXT,'Download')
-        for link in links:
-            PDF_links.append(link.get_attribute('href'))
-            print(link.get_attribute('href'))
-        driver1.close()
+    PDF_links = findElemintargetByPartialText(Issues_links,'a','Download','href',main)
 
 def scrapeStructure_M():
     volumes = driver.find_elements(By.TAG_NAME,'a')
@@ -371,17 +362,21 @@ def scrapeStructure_M():
         print(abstract.replace('abstract','full-text-pdf'))
 
 def scrapeStructure_N(page,main=''): # requests
-    global Abstracts, Abstracts_link, Issues_links
+    global Abstracts, Abstracts_link, Issues_links, PDF_links
     Issues_links = findAttrintarget([page],'a','issue/view','href','href',main)
-    Abstracts_link = findAttrintarget(Issues_links,'a','article-','href','href',main)
-    PDF_links = findAttrintarget(Issues_links,'a','obj_galley_link','class','href',main)
+    temp = Issues_links.copy()
+    Abstracts_link = findAttrintarget(Issues_links,'a','article/view','href','href',main)
+    PDF_links = findAttrintarget(temp,'a','obj_galley_link','class','href',main)
     Abstract_links_temp = Abstracts_link.copy()
     print(len(PDF_links))
     print(len(Abstracts_link))
     while len(Abstract_links_temp)>0:
         soup = parse(Abstract_links_temp.pop())
-        Abstracts.append(soup.find('section',{'class','item abstract'}.text.lower()))
-        print(f'Gathered {len(Abstracts)} Abstracts!')
+        try:
+            Abstracts.append(soup.find('section',{'class','item abstract'}).text.lower())
+            print(f'Gathered {len(Abstracts)} Abstracts!')
+        except:
+            pass
 
 def scrapeStructure_O():
     Issues_links_temp = []
@@ -400,14 +395,15 @@ def scrapeStructure_O():
         Abstracts_link.append(issue)
         Abstracts.append(driver1.find_element(By.ID,'abstracts').text)
 
-def scrapeStructure_P():
+def scrapeStructure_P(main): # requests
 
+    global PDF_links
     #  Old Archives Pages 
     #  Only full issue pdf is available
     #  Should add page in which the API was detected
     
     Issues_links.extend(['http://www.mejfm.com/Archives%202014%20-%202016.htm','http://www.mejfm.com/Archives%20June%202003-December%202013.htm','http://www.mejfm.com/archive.htm'])
-    getPDFsInIssuesBY('href','.pdf')
+    PDF_links = findAttrintarget(Issues_links,'a','.pdf','href','href',main)
 
 def scrapeStructure_Q(page): # requests
     global Issues_links, PDF_links
@@ -773,7 +769,7 @@ if '.asp' in article: # switched to requests / PDF links needs to be updated eve
         main = 'https://www.mmjonweb.org/'
         file = open('www.mmjonweb.org.txt','w')
     scrapeStructure_B(archives_page,main)
-if 'https://www.easpublisher.com/journal' in article: # switched to requests
+if 'www.easpublisher.com/journal' in article: # switched to requests
     if 'easjms' in article: # done
         archives_page ='https://www.easpublisher.com/journal/easjms/archives'
         file = open('www.easpublisher.com-easjms.txt','w')
@@ -863,7 +859,7 @@ if 'journals.ju' in article: # switched to requests
         archives_page = 'http://journals.ju.edu.jo/JMJ/issue/archive'
         file = open('journals.ju.edu.jo-JMJ.txt','w')
     scrapeRequests(archives_page,'','a','issue/view','href','href','a','target=_blank','href','href')
-if 'https://www.karger.com/' in article: # switched to requests
+if 'www.karger.com/' in article: # switched to requests
     archives_page = 'https://www.karger.com/Journal/Issue/281490'
     main = 'https://www.karger.com/'
     file = open('www.karger.com.txt','w')
@@ -881,7 +877,7 @@ if 'springeropen' in article:# switched to requests
         main = 'https://ejim.springeropen.com/'
     driver.close()
     scrapeStructure_D(archives_page,main) 
-if 'https://www.journal-jmsr.net/' in article: # switched to requests
+if 'www.journal-jmsr.net/' in article: # switched to requests
     archives_page = 'https://www.journal-jmsr.net/archives.php'
     file = open('www.journal-jmsr.net.txt','w')
     main = 'https://www.journal-jmsr.net/'
@@ -999,7 +995,7 @@ if 'qscience.com' in article: # switched to requests
     driver = webdriver.Chrome(options=options)
     driver.get(archives_page)
     scrapeStructure_J(archives_page,main)
-if 'http://rmsjournal.org/' in article:# missing: going to multi pages inside the issue
+if 'rmsjournal.org/' in article:# missing: going to multi pages inside the issue
     archives_page = 'http://rmsjournal.org/Archive.aspx'
     file = open('rmsjournal.org.txt','w')
     driver.close()
@@ -1014,13 +1010,11 @@ if 'www.annalsofafricansurgery' in article: # needs webdriver installed and adde
     driver = webdriver.Chrome(options=options)
     driver.get(archives_page)
     scrapeStructure_K()
-if 'jomenas.org' in article: # needs webdriver installed and added to path
+if 'jomenas.org' in article: # switched to requests
     archives_page = 'https://www.jomenas.org/home.html'
     file = open('www.jomenas.org.com.txt','w')
-    driver.close()
-    driver = webdriver.Chrome(options=options)
-    driver.get(archives_page)
-    scrapeStructure_L()
+    main = 'https://www.jomenas.org/'
+    scrapeStructure_L(archives_page,main)
 if 'gssrr.org' in article: # switched to requests
     archives_page = 'https://gssrr.org/index.php/JournalOfBasicAndApplied/issue/archive'
     file = open('gssrr.org.txt','w')
@@ -1107,18 +1101,17 @@ if 'me-jaa.com' in article: # switched to requests
     main = 'http://www.me-jaa.com/'
     Issues_links.append(archives_page)
     PDF_links = findAttrintarget(Issues_links,'a','.pdf','href','href',main)
-if 'mejfm.com' in article: # needs webdriver installed and added to path
+if 'mejfm.com' in article: # switched to requests
     driver.close()
     archives_page = 'http://www.mejfm.com/journal.htm'
     file = open('www.mejfm.com.txt','w')
-    driver = webdriver.Chrome(options=options)
-    driver.get(archives_page)
-    scrapeStructure_P()
+    main = 'http://www.mejfm.com/'
+    scrapeStructure_P(main)
 if 'journals.uokerbala.edu.iq' in article: # switched to requests /
     archives_page = 'https://journals.uokerbala.edu.iq/index.php/kj/issue/archive'
     file = open('journals.uokerbala.edu.iq-PDFs.txt','w')
     abstract = open('journals.uokerbala.edu.iq-abstracts.txt','w')
-    scrapeStructure_N()
+    scrapeStructure_N(archives_page)
     for link in Abstracts_link:
         abstract.write(link+'\n')
     abstract.close()  
@@ -1129,11 +1122,11 @@ if 'www.iraqijms.net' in article: # switched to requests
     scrapeRequests(archives_page,main,'a','issue&id=','href','href','a','.pdf','href','href')
     temp = PDF_links.copy()
     PDF_links = list(dict.fromkeys(temp))
-if 'iraqmedj.org' in article: # switched to requests /
+if 'iraqmedj.org' in article: # switched to requests
     archives_page = 'https://iraqmedj.org/index.php/imj/issue/archive'
     file = open('iraqmedj.org-PDFs.txt','w')
     abstract = open('iraqmedj.org-abstracts.txt','w')
-    scrapeStructure_N()
+    scrapeStructure_N(archives_page)
     for link in Abstracts_link:
         abstract.write(link+'\n')
     abstract.close()  
@@ -1171,7 +1164,7 @@ if 'hsd-fmsb.org' in article: # switched to requests
             print(f'gathered {len(PDF_links)} PDFs')
         except:
             pass
-if 'https://phcfm.org' in article: # switched to requests / not finished test run, takes some time
+if 'phcfm.org' in article: # switched to requests / not finished test run, takes some time
     archives_page = 'https://phcfm.org/index.php/phcfm/issue/archive'
     file = open('phcfm.org.txt','w')
     PDF_links = findAttrintarget(findElemintargetByPartialText(findAttrintarget([archives_page],'a','issue/view','href','href'), 'a', 'PDF','href'),'iframe','pdf.js','src','src')
@@ -1185,7 +1178,7 @@ if 'jaccrafrica.com' in article: # switched to requests
     file = open('www.jaccrafrica.com.txt','w')
     main = 'https://www.jaccrafrica.com/'
     PDF_links = findAttrintarget([archives_page],'a','.pdf','href','href',main)
-if 'https://medtech.ichsmt.org' in article: # switched to requests / ending with 0 PDFs?
+if 'medtech.ichsmt.org' in article: # switched to requests / ending with 0 PDFs?
     archives_page = 'https://jkmc.uobaghdad.edu.iq/index.php/MEDICAL/issue/archive'
     file = open('medtech.ichsmt.org.txt','w')
     main = ''

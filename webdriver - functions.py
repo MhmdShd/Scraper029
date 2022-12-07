@@ -105,7 +105,6 @@ def F_getPDFs():
         print(f'\nIssue {len(Issues_links)} left')
         driver.close()
 
-
 def scrapeStructure_C2():
     Prev_driver = driver.find_element(By.CLASS_NAME,'previous').get_attribute('href')
     Next_driver = driver.find_element(By.CLASS_NAME,'next').get_attribute('href')
@@ -212,8 +211,6 @@ def I_getPDFs2():#PDF_Pages
                     print(f'{len(PDF_links)} PDFs gathered')
             driver2.close()
 
-
-
 def scrapeStructure_J2():
     getVolumesByPartialText('Volume ')
     J_getIssues()
@@ -266,7 +263,6 @@ def J_getPDFs2(): #PDF_Pages
     PDF_links = list(dict.fromkeys(temp_PDF_links))
     print(f'Gathered a total of {len(PDF_links)} PDFs')
 
-
 def scrapeStructure_N():
     global Abstracts_link,Abstracts
     Abstract_links_temp = []
@@ -298,4 +294,34 @@ def scrapeStructure_H2():
             Issues_links.append(link.get_attribute('href'))
             print(f'{len(Issues_links)} issues gathered')
     getPDFsInIssuesBY('href','.pdf')
+
+def scrapeStructure_P2():
+
+    #  Old Archives Pages 
+    #  Only full issue pdf is available
+    #  Should add page in which the API was detected
+    
+    Issues_links.extend(['http://www.mejfm.com/Archives%202014%20-%202016.htm','http://www.mejfm.com/Archives%20June%202003-December%202013.htm','http://www.mejfm.com/archive.htm'])
+    getPDFsInIssuesBY('href','.pdf')
+
+def scrapeStructure_L2():
+    getIssuesBY('href','--vol',driver)
+    L_getPDFs2()
+def L_getPDFs2():
+    while len(Issues_links)>0:
+        issue = Issues_links.pop()
+        driver1 = webdriver.Chrome(options=options)
+        driver1.get(issue)
+        links = driver1.find_elements(By.PARTIAL_LINK_TEXT,'Download')
+        for link in links:
+            PDF_links.append(link.get_attribute('href'))
+            print(link.get_attribute('href'))
+        driver1.close()
+
+
+
+
+
+
+
 
